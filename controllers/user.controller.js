@@ -32,19 +32,19 @@ const register = async (req, res) => {
     const user = newCustomer.toObject();
     delete user.password;
 
-    const accessToken = generateToken(
-      { id: newCustomer._id, email: newCustomer.email },
-      "1d"
-    );
-
-    const refreshToken = generateToken(
-      { id: newCustomer._id, email: newCustomer.email },
-      "7d"
-    );
-
     return res.status(200).json({
       message: "Customer created",
-      data: { ...user, accessToken: accessToken, refreshToken: refreshToken },
+      data: {
+        ...user,
+        accessToken: generateToken(
+          { id: newCustomer._id, email: newCustomer.email },
+          "1d"
+        ),
+        refreshToken: generateToken(
+          { id: newCustomer._id, email: newCustomer.email },
+          "7d"
+        ),
+      },
     });
   } catch (error) {
     console.log("Error creating customer:", error.message);
@@ -55,17 +55,29 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   const { email, password } = req.body;
 
-  const customer = await userModel.findOne({ email });
+  const user = await userModel.findOne({ email });
 
-  if (customer) {
-    return res.status(404).json({ message: "Customer not found" });
+  if (!user) {
+    return res.status(404).json({ message: "user not found" });
   }
-  const isMatch = await bcrypt.compare(password, customer.password);
+
+  console.log('user', user)
+  const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
     return res.status(400).json({ message: "Password false" });
   }
 
-  return res.status(200).json({ message: "Login success" });
+  const userObj = user.toObject();
+  delete userObj.password;
+
+  return res.status(200).json({
+    message: "Login success",
+    data: {
+      ...userObj,
+      accessToken: generateToken({ id: user._id, email: user.email }, "1d"),
+      refreshToken: generateToken({ id: user._id, email: user.email }, "7d"),
+    },
+  });
 };
 
 module.exports = { register, login };
