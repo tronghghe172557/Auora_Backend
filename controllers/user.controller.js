@@ -12,6 +12,12 @@ const register = async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
+    const userExist = await userModel.findOne({ email }).lean();
+
+    if (userExist) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
+
     const hashedPass = await bcrypt.hash(password, 10);
 
     const newCustomer = new userModel({

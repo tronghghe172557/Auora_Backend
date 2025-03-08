@@ -38,6 +38,10 @@ coverage/
 # MongoDB local data
 data/db/
 
+# Docker
+.dockerignore
+docker-compose.override.yml
+
 # Misc
 .npm
 .eslintcache

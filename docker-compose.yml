@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    ports:
+      - "9999:9999"
+    environment:
+      - NODE_ENV=development
+      - PORT=9999
+      - MONGO_URI=mongodb://mongodb:27017/Auora
+      - JWT_KEY=74cc3cc639cf5e18cdd3b561bad8009fb54f75001d7c6dcb1ad63e92f96cf5ea
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+    command: >
+      sh -c "npm start"
+
+  mongodb:
+    image: mongo:7.0-jammy
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=Auora
+    restart: on-failure 
+
+volumes:
+  mongodb_data:
