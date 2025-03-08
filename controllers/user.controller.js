@@ -4,27 +4,52 @@ const jwt = require("jsonwebtoken");
 
 const register = async (req, res) => {
   try {
-    const { name, email, password, phone, addresses } = req.body;
+    const { username, email, password } = req.body;
 
-    if (!name || !email || !password || !phone || !addresses) {
+    console.log("req.body", req.body);
+
+    if (!username || !email || !password) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
     const hashedPass = await bcrypt.hash(password, 10);
 
     const newCustomer = new userModel({
-      name,
+      username,
       email,
       password: hashedPass,
-      phone,
-      addresses,
     });
 
     newCustomer.save();
 
-    return res
-      .status(200)
-      .json({ message: "Customer created", data: newCustomer });
+    const user = await userModel
+      .findById(newCustomer._id)
+      .select("-password -__v")
+      .lean();
+
+    if (!user) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    const accessToken = jwt.sign(
+      { id: newCustomer._id, email: newCustomer.email },
+      process.env.JWT_KEY,
+      {
+        expiresIn: "24h",
+      }
+    );
+    const refreshToken = jwt.sign(
+      { id: newCustomer._id, email: newCustomer.email },
+      process.env.JWT_KEY,
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    return res.status(200).json({
+      message: "Customer created",
+      data: { ...user, accessToken: accessToken, refreshToken: refreshToken },
+    });
   } catch (error) {
     console.log("Error creating customer:", error.message);
     return res.status(500).json({ message: "Internal server error" });
