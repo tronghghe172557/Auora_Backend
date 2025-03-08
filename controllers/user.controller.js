@@ -1,6 +1,7 @@
 const userModel = require("../models/user.model");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { generateToken } = require("../utils/jwt.utils");
 
 const register = async (req, res) => {
   try {
@@ -28,28 +29,17 @@ const register = async (req, res) => {
 
     newCustomer.save();
 
-    const user = await userModel
-      .findById(newCustomer._id)
-      .select("-password -__v")
-      .lean();
+    const user = newCustomer.toObject();
+    delete user.password;
 
-    if (!user) {
-      return res.status(404).json({ message: "Customer not found" });
-    }
-
-    const accessToken = jwt.sign(
+    const accessToken = generateToken(
       { id: newCustomer._id, email: newCustomer.email },
-      process.env.JWT_KEY,
-      {
-        expiresIn: "24h",
-      }
+      "1d"
     );
-    const refreshToken = jwt.sign(
+
+    const refreshToken = generateToken(
       { id: newCustomer._id, email: newCustomer.email },
-      process.env.JWT_KEY,
-      {
-        expiresIn: "7d",
-      }
+      "7d"
     );
 
     return res.status(200).json({
