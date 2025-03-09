@@ -7,8 +7,6 @@ const register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    console.log("req.body", req.body);
-
     if (!username || !email || !password) {
       return res.status(400).json({ message: "Missing required fields" });
     }
