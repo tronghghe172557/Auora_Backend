@@ -6,6 +6,7 @@ const createImage = async (req, res) => {
     const { title, image, description } = req.body;
     const userId = req.user.id; // Assuming this comes from your auth middleware
 
+    console.log({ title, image, description, userId });
     if (!title || !image || !description) {
       return res.status(400).json({ message: "Missing required fields" });
     }

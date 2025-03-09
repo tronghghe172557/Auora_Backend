@@ -1,81 +1,57 @@
-const userModel = require("../models/user.model");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const { generateToken } = require("../utils/jwt.utils");
+const User = require("../models/user.model");
 
-const register = async (req, res) => {
+// Get all users
+const getUsers = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
-
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-
-    const userExist = await userModel.findOne({ email }).lean();
-
-    if (userExist) {
-      return res.status(400).json({ message: "Email already exists" });
-    }
-
-    const hashedPass = await bcrypt.hash(password, 10);
-
-    const newCustomer = new userModel({
-      username,
-      email,
-      password: hashedPass,
-    });
-
-    newCustomer.save();
-
-    const user = newCustomer.toObject();
-    delete user.password;
-
-    return res.status(200).json({
-      message: "Customer created",
-      data: {
-        ...user,
-        accessToken: generateToken(
-          { id: newCustomer._id, email: newCustomer.email },
-          "1d"
-        ),
-        refreshToken: generateToken(
-          { id: newCustomer._id, email: newCustomer.email },
-          "7d"
-        ),
-      },
-    });
+    const users = await User.find();
+    res.status(200).json(users);
   } catch (error) {
-    console.log("Error creating customer:", error.message);
-    return res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: error.message });
   }
 };
 
-const login = async (req, res) => {
-  const { email, password } = req.body;
-
-  const user = await userModel.findOne({ email });
-
-  if (!user) {
-    return res.status(404).json({ message: "user not found" });
+// Get user detail by ID
+const getUserDetail = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-
-  console.log('user', user)
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
-    return res.status(400).json({ message: "Password false" });
-  }
-
-  const userObj = user.toObject();
-  delete userObj.password;
-
-  return res.status(200).json({
-    message: "Login success",
-    data: {
-      ...userObj,
-      accessToken: generateToken({ id: user._id, email: user.email }, "1d"),
-      refreshToken: generateToken({ id: user._id, email: user.email }, "7d"),
-    },
-  });
 };
 
-module.exports = { register, login };
+// Delete user by ID
+const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({ message: "User deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Update user by ID
+const updateUser = async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = {
+  getUsers,
+  getUserDetail,
+  deleteUser,
+  updateUser
+};

@@ -11,6 +11,6 @@ const imageRouter = express.Router();
 imageRouter.get("/", authGuard, getImages);
 imageRouter.get("/:id", authGuard, getById);
 imageRouter.post("/", authGuard, createImage);
-imageRouter.delete("/", authGuard, deleteImage);
+imageRouter.delete("/:id", authGuard, deleteImage);
 
 module.exports = imageRouter;
