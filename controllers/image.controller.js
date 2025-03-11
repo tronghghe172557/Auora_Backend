@@ -32,17 +32,28 @@ const createImage = async (req, res) => {
 
 const getImages = async (req, res) => {
   try {
-    const userId = req.user.id;
-    console.log(userId);
-    if (!userId) {
-      return res.status(400).json({ message: "User ID is required" });
-    }
-
     const images = await imageModel
-      .find({
-        userId: new mongoose.Types.ObjectId(userId),
-      })
-      .populate("userId", "username email")
+      .find()
+      .populate("userId", "_id username email avatar")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return res.status(200).json({
+      message: "Images retrieved successfully",
+      data: images,
+    });
+  } catch (error) {
+    console.error("Error retrieving images:", error.message);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const getImagesByUsers = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const images = await imageModel
+      .find({ userId: userId })
+      .populate("userId", "_id username email avatar")
       .lean();
 
     return res.status(200).json({
@@ -120,4 +131,5 @@ module.exports = {
   getImages, // Note: renamed getImage -> getImages for clarity
   getById,
   deleteImage,
+  getImagesByUsers,
 };
