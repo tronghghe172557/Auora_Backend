@@ -1,5 +1,7 @@
 const imageModel = require("../models/image.model");
 const mongoose = require("mongoose");
+const cloudinary = require("../utils/cloudinary");
+const fs = require("fs");
 
 const createImage = async (req, res) => {
   try {
@@ -126,10 +128,44 @@ const deleteImage = async (req, res) => {
   }
 };
 
+// Upload ảnh lên Cloudinary với kích thước tối ưu cho web
+const uploadImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "Vui lòng tải lên một file ảnh" });
+    }
+
+    // Upload lên Cloudinary với các tùy chọn tối ưu
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: "aurora_app",
+      use_filename: true,
+      transformation: [
+        { width: 1200, height: 1200, crop: "limit" }, // Giới hạn kích thước tối đa
+        { quality: "auto:good" }, // Tự động điều chỉnh chất lượng
+        { fetch_format: "auto" } // Tự động chọn định dạng tối ưu (WebP cho các trình duyệt hỗ trợ)
+      ]
+    });
+
+    // Xóa file tạm sau khi upload
+    fs.unlinkSync(req.file.path);
+
+    res.status(200).json({
+      message: "Upload ảnh thành công",
+      imageUrl: result.secure_url,
+      imageId: result.public_id,
+    });
+  } catch (error) {
+    console.error("Lỗi upload ảnh:", error);
+    res
+      .status(500)
+      .json({ message: "Lỗi khi upload ảnh", error: error.message });
+  }
+};
 module.exports = {
   createImage,
   getImages, // Note: renamed getImage -> getImages for clarity
   getById,
   deleteImage,
   getImagesByUsers,
+  uploadImage,
 };
